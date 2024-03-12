@@ -1,0 +1,5 @@
+/ASDF-Compiler/venv/
+/ASDF-Compiler/json/normalized/*
+/ASDF-Compiler/json/octree/*
+/ASDF-Compiler/sdfs/*
+/ASDF-Compiler/STLs/*
