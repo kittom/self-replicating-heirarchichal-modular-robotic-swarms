@@ -1,0 +1,51 @@
+<html>
+  <title>Hack like a bitch</title>
+  <script src="../js/decision/hack.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="../lib/js-colormaps.js"></script>
+  <script src="../lib/three.min.js"></script>
+
+  <script src="//unpkg.com/3d-force-graph"></script>
+
+  <script>
+    // set up constants
+    var fileName = "../asdf/json/CubeCone4.json";
+
+    var color1 = 0xffffff; /*white*/
+    var color1 = "#ffffff"; /*white*/
+    var color2 = "#020227"; /*kohly*/
+    var color3 = 0x1c5c61; /*teal*/
+    var color4 = "#fa6e70"; //red/orange
+    var color5 = "#380152"; //purple
+    var color6 = "#696767"; //grey
+    var color7 = "#03dbfc"; //blue
+    // colormap = Blues;
+    colormap = YlGnBu;
+    var fileName = "../asdf/json/CubeCone4.json";
+    var cone;
+
+
+
+    $.getJSON(fileName, function (json) {
+      setup = {};
+      setup.nodes = [];
+      setup.edges = [];
+      setup.viz = {};
+      setup.viz.colorMaps = [YlGnBu, coolwarm, winter, jet];
+      console.log(json);
+
+      //todo move this to other document
+      scale = 1 / 0.1875;
+
+      buildList = createBuildList1(json, setup, scale);
+
+      drawGraph(setup);
+    });
+
+  
+  </script>
+
+  <body>
+    <div id="graph1"></div>
+  </body>
+</html>

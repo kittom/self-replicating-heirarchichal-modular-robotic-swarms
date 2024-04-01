@@ -1,0 +1,216 @@
+<!-- // Amira Abdel-Rahman -->
+<!-- // (c) Massachusetts Institute of Technology 2020 -->
+
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Hierarchy Explained</title>
+	
+</head>
+<body>
+	<!-- <a download="info.txt" id="downloadlink" style="display: none">Download</a> -->
+
+	<div id="webgl"></div>
+
+	<script src="../lib/three.min.js"></script>
+	<script src="../lib/OrbitControls.js"></script>
+	<script src="../lib/OBJLoader.js"></script>
+	<script src="../lib/dat.gui.min.js"></script>
+	<script src="../lib/TransformControls.js"></script>
+	<script src="../lib/GPUComputationRenderer.js"></script>
+
+	<script src="../js/voxel.js"></script>
+
+	<script src="../js/swarm.js"></script>
+	<script src="../js/swarm_geometry.js"></script>
+	<script src="../js/swarm_gui.js"></script>
+	<script src="../js/swarm_IK.js"></script>
+	<script src="../js/swarm_move.js"></script>
+	<script src="../js/swarm_path.js"></script>
+	<script src="../js/swarm_step.js"></script>
+	<script src="../js/swarm_three.js"></script>
+	<script src="../js/swarm_voxel.js"></script>
+
+	<script>
+
+		var voxelSpacing=3.0;
+		var three='webgl';
+		var speed=1000;
+		var offset=8;
+		var buildSize=12;
+		var gridSize=buildSize+2*offset;
+
+		var robotLocations=[
+			// [new THREE.Vector3(offset+2           ,offset+0          ,0)      ,new THREE.Vector3(offset+0           ,offset+0           ,0),2],
+			// [new THREE.Vector3(offset+0           ,gridSize-offset-1 ,0)      ,new THREE.Vector3(offset+0           ,gridSize-offset-2  ,0),1],
+			// [new THREE.Vector3((gridSize-offset-2),offset+1          ,0)      ,new THREE.Vector3((gridSize-offset-2),offset+0           ,0),1],
+			[new THREE.Vector3((gridSize-offset-2)+4,gridSize-offset -4,0)      ,new THREE.Vector3((gridSize-offset-2)+4,(gridSize-offset-2)-4,0),1],
+			[new THREE.Vector3((gridSize-offset-2)+4,gridSize-offset -4,0)      ,new THREE.Vector3((gridSize-offset-2)+4,(gridSize-offset-2)-4,0),2],
+
+			[new THREE.Vector3((gridSize-offset-2)-4,gridSize-offset +4,0)      ,new THREE.Vector3((gridSize-offset-2)-4,(gridSize-offset-1)+4,0),1],
+
+			// [new THREE.Vector3((gridSize-offset-2),gridSize-offset ,0)      ,new THREE.Vector3((gridSize-offset-2),(gridSize-offset-2),0),3],
+
+			// [new THREE.Vector3((gridSize-offset-5),gridSize-offset-1 ,0)      ,new THREE.Vector3((gridSize-offset-5),(gridSize-offset-2),0),1],
+			// [new THREE.Vector3((offset+4),gridSize-offset-1 ,0)      ,new THREE.Vector3((offset+4),(gridSize-offset-2),0),1],
+
+
+			// [new THREE.Vector3((gridSize-offset-5),offset+1 ,0)      ,new THREE.Vector3((gridSize-offset-5),(offset-0),0),1],
+			// [new THREE.Vector3((offset+4),offset+1 ,0)      ,new THREE.Vector3((offset+4),(offset-0),0),1],
+
+
+			// [new THREE.Vector3((offset+2)           ,(offset+0)         ,0)   ,new THREE.Vector3(offset+0           ,offset+0           ,0),2]
+		];
+
+		var depositLocations=[
+			// [new THREE.Vector3(offset+0            ,offset+0           ,0) ],
+			// [new THREE.Vector3(offset+0            ,(gridSize-offset-2),  0) ],
+			// [new THREE.Vector3(gridSize-offset-2     ,offset+0           ,0) ],
+			[new THREE.Vector3(gridSize-offset-2+4     ,(gridSize-offset-2)-4,  0) ],
+			[new THREE.Vector3(gridSize-offset-2+4     ,(gridSize-offset-2)-4,  0) ],
+
+			[new THREE.Vector3(gridSize-offset-2-4     ,(gridSize-offset-2)+4,  0) ],
+
+			// [new THREE.Vector3((gridSize-offset-5),gridSize-offset-2 ,  0) ],
+			// [new THREE.Vector3((offset+4),gridSize-offset-2,  0) ],
+			// [new THREE.Vector3((gridSize-offset-5),offset+0,  0) ],
+			// [new THREE.Vector3((offset+4),offset+0,  0) ],
+			// [new THREE.Vector3(gridSize-offset-2     ,(gridSize-offset-2),  0) ],
+		];
+		var hierarchical=true;
+
+		var buildType=["frepCube","frep","directions","list"];
+
+		var setup={
+			three:'webgl',
+			voxelSpacing:3.0,
+			viz:{
+				speed:1000,
+				showGUI:false,
+				saveAngleData:false,
+			},
+			robotGeometry:{
+                leg1:6,
+                leg2:6,
+                offset:3
+            },
+            path:{
+                showPath:false,
+                number:20, //number of divisions/points 
+                cHeight:1.5 //parabola height (will be multiplied later by voxelSpacing)
+
+            },
+			robotLocations:robotLocations,
+			depositLocations:depositLocations,
+			hierarchical:true,
+			buildType:"list",
+			gridSize:gridSize,
+			
+
+		};
+
+		
+
+		var recursiveSwarms=new Swarm(setup);
+		recursiveSwarms.camera.position.set(200*recursiveSwarms.gridSize/40, 200*recursiveSwarms.gridSize/40, 150*recursiveSwarms.gridSize/40);//general
+
+
+		recursiveSwarms.path[1].delay=2*recursiveSwarms.path[1].delay;
+
+
+		var scenario=1;
+
+		var count=0;
+		var list=[]
+
+		list.push(new THREE.Vector3(gridSize/2-2+2 +4   ,gridSize/2-2+2 -4 ,1+0));
+
+		list.push(new THREE.Vector3(gridSize/2-2+0 +4   ,gridSize/2-2+2 -4 ,1+0));
+		list.push(new THREE.Vector3(gridSize/2-2+2 +4   ,gridSize/2-2+0 -4 ,1+0));
+
+		list.push(new THREE.Vector3(gridSize/2-2+0 +4   ,gridSize/2-2+0 -4 ,1+0));
+
+
+		list.push(new THREE.Vector3(gridSize/2-2+2 +4   ,gridSize/2-2+2 -4 ,1+2));
+
+		list.push(new THREE.Vector3(gridSize/2-2+0 +4   ,gridSize/2-2+2 -4 ,1+2));
+		list.push(new THREE.Vector3(gridSize/2-2+2 +4   ,gridSize/2-2+0 -4 ,1+2));
+
+		list.push(new THREE.Vector3(gridSize/2-2+0 +4   ,gridSize/2-2+0 -4 ,1+2));
+
+
+
+
+		
+
+
+		
+		next();
+		// recursiveSwarms.voxelList[0].list=[new THREE.Vector3(3,0,1)];
+		// recursiveSwarms.startMovement(0,true);
+		function next(){
+			console.log("herrr!!")
+			if(count%2==0){
+				if(list.length>0){
+					recursiveSwarms.THREESimulationRobot[1].visible=false;
+					recursiveSwarms.THREESimulationRobot[0].visible=true;
+					recursiveSwarms.voxelList[0].list=[];
+
+					recursiveSwarms.voxelList[0].list.push(new THREE.Vector3(gridSize-offset-2+2+1  +4  ,(gridSize-offset-2)+2+1 -4  ,1+0));
+					recursiveSwarms.voxelList[0].list.push(new THREE.Vector3(gridSize-offset-2+2+0  +4  ,(gridSize-offset-2)+2+1 -4  ,1+0));
+					recursiveSwarms.voxelList[0].list.push(new THREE.Vector3(gridSize-offset-2+2+1  +4  ,(gridSize-offset-2)+2+0 -4  ,1+0));
+					recursiveSwarms.voxelList[0].list.push(new THREE.Vector3(gridSize-offset-2+2+0  +4  ,(gridSize-offset-2)+2+0 -4  ,1+0));
+					recursiveSwarms.voxelList[0].list.push(new THREE.Vector3(gridSize-offset-2+2+1  +4  ,(gridSize-offset-2)+2+1 -4  ,1+1));
+					recursiveSwarms.voxelList[0].list.push(new THREE.Vector3(gridSize-offset-2+2+0  +4  ,(gridSize-offset-2)+2+1 -4  ,1+1));
+					recursiveSwarms.voxelList[0].list.push(new THREE.Vector3(gridSize-offset-2+2+1  +4  ,(gridSize-offset-2)+2+0 -4  ,1+1));
+					recursiveSwarms.voxelList[0].list.push(new THREE.Vector3(gridSize-offset-2+2+0  +4  ,(gridSize-offset-2)+2+0 -4  ,1+1));
+
+					recursiveSwarms.startMovement(0,true);
+
+				}
+				
+
+			}else{
+				recursiveSwarms.THREESimulationRobot[0].visible=false;
+				recursiveSwarms.THREESimulationRobot[1].visible=true;
+				recursiveSwarms.voxelList[1].list=[list[0]];
+				list.shift()
+
+				recursiveSwarms.deleteVoxelAt(0,new THREE.Vector3(gridSize-offset-2+2+1 +4  ,(gridSize-offset-2)+2+1  -4 ,1+0));
+				recursiveSwarms.deleteVoxelAt(0,new THREE.Vector3(gridSize-offset-2+2+0 +4  ,(gridSize-offset-2)+2+1  -4 ,1+0));
+				recursiveSwarms.deleteVoxelAt(0,new THREE.Vector3(gridSize-offset-2+2+1 +4  ,(gridSize-offset-2)+2+0  -4 ,1+0));
+				recursiveSwarms.deleteVoxelAt(0,new THREE.Vector3(gridSize-offset-2+2+0 +4  ,(gridSize-offset-2)+2+0  -4 ,1+1));
+				recursiveSwarms.deleteVoxelAt(0,new THREE.Vector3(gridSize-offset-2+2+1 +4  ,(gridSize-offset-2)+2+1  -4 ,1+1));
+				recursiveSwarms.deleteVoxelAt(0,new THREE.Vector3(gridSize-offset-2+2+0 +4  ,(gridSize-offset-2)+2+1  -4 ,1+1));
+				recursiveSwarms.deleteVoxelAt(0,new THREE.Vector3(gridSize-offset-2+2+1 +4  ,(gridSize-offset-2)+2+0  -4 ,1+1));
+
+				recursiveSwarms.startMovement(1,true);
+			}
+			count++;
+		
+			
+			
+
+		}
+
+
+		recursiveSwarms.voxelList[2].list=[];
+		for(var i=0;i<4;i++){
+			for(var j=0;j<4;j++){
+				for(var k=0;k<4;k++){
+					recursiveSwarms.voxelList[2].list.push(new THREE.Vector3(gridSize-offset-2 -3-4-j    ,(gridSize-offset-2)-3+4-k,  1+i))
+					
+				}
+			}
+		}
+		recursiveSwarms.startMovement(2,true);
+
+
+
+	</script>
+
+	
+
+
+</body>
+</html>

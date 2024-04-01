@@ -1,0 +1,223 @@
+<head>
+  <!-- // Amira Abdel-Rahman -->
+  <!-- // (c) Massachusetts Institute of Technology 2020 -->
+
+  <style>
+    body {
+      margin: 0;
+      background-color: #020227;
+    }
+
+    #graph1 {
+      float: left;
+      background-color: #020227;
+    }
+    #graph {
+      float: right;
+      background-color: #020227;
+    }
+  </style>
+
+  <title>Build Sequence</title>
+  <!-- <script src="//unpkg.com/three"></script>   -->
+  <script src="../lib/three.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+  <script src="//unpkg.com/d3-dsv"></script>
+  <script src="//unpkg.com/dat.gui"></script>
+  <script src="//unpkg.com/d3-octree"></script>
+  <script src="//unpkg.com/d3-force-3d"></script>
+
+  <script src="//unpkg.com/3d-force-graph"></script>
+  <script src="//unpkg.com/three-spritetext"></script>
+
+  <script src="../lib/js-colormaps.js"></script>
+</head>
+
+<body>
+  <div id="graph1"></div>
+  <div id="graph"></div>
+
+  <script src="../js/decision/decision_old.js"></script>
+  <script src="../js/UI/graphBlocks.js"></script>
+
+  <script>
+    var color1 = 0xffffff; /*white*/
+    var color1 = "#ffffff"; /*white*/
+    var color2 = "#020227"; /*kohly*/
+    var color3 = 0x1c5c61; /*teal*/
+    var color4 = "#fa6e70"; //red/orange
+    var color5 = "#380152"; //purple
+    var color6 = "#696767"; //grey
+    var color7 = "#03dbfc"; //blue
+    colormap = Blues;
+    colormap = YlGnBu;
+    var fileName = "../asdf/json/CubeCone4.json";
+    var cone;
+
+    setup = {};
+    setup.nodes = [];
+    setup.edges = [];
+    setup.viz = {};
+    setup.viz.colorMaps = [YlGnBu, coolwarm, winter, jet];
+
+    example();
+
+    $.getJSON(fileName, function (json) {
+      setup = {};
+      setup.nodes = [];
+      setup.edges = [];
+      setup.viz = {};
+      setup.viz.colorMaps = [YlGnBu, coolwarm, winter, jet];
+      console.log(json);
+
+      //todo move this to other document
+      scale = 1 / 0.1875;
+
+      buildList = createBuildList1(json, setup, scale);
+
+      drawGraph(setup);
+    });
+
+    var button = {
+      "Save Image": function () {
+        // var cnvs = document.getElementById('graph').children[0].children[0].children[0].children[2];
+        // console.log(cnvs)
+        // var ctx = cnvs.getContext('2d');
+
+        // var dataURL = cnvs.toDataURL({ pixelRatio: 1 });
+        graph.renderer().render(graph.scene(), graph.camera());
+        var dataURL = graph.renderer().domElement.toDataURL();
+
+        downloadURI(dataURL, "canvas.png");
+      },
+      "Start Simulation": function () {},
+      "Show Blocks": function () {
+        // example();
+        cone.visible = !cone.visible;
+      },
+    };
+
+    const gui = new dat.GUI();
+    gui.add(button, "Show Blocks");
+    gui.add(button, "Start Simulation");
+
+    function example() {
+      const controls = { "DAG Orientation": "td" };
+
+      function downloadURI(uri, name) {
+        var link = document.createElement("a");
+        link.download = name;
+        link.href = uri;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        delete link;
+      }
+
+      // const gui = new dat.GUI();
+
+      // gui.add(controls, 'DAG Orientation', ['td', 'bu', 'lr', 'rl', 'zout', 'zin', 'radialout', 'radialin', null])
+      //     .onChange(orientation => graph && graph.dagMode(orientation));
+      // gui.add(button,"Save Image");
+
+      // graph config
+      const NODE_REL_SIZE = 1;
+
+      const graph = ForceGraph3D({ controlType: "orbit" })
+        .backgroundColor(color2)
+        .dagMode("td")
+        .dagLevelDistance(150)
+        .linkColor(() => "rgba(127,127,127,0.5)")
+        .nodeThreeObject((node) => {
+          var use = node.level <= 2;
+          // use a sphere as a drag handle
+          const obj = new THREE.Mesh(
+            new THREE.CubeGeometry(
+              node.size / 25,
+              node.size / 25,
+              node.size / 25
+            ),
+            new THREE.MeshBasicMaterial({
+              depthWrite: false,
+              transparent: use,
+              opacity: 0,
+            })
+          );
+
+          // add text sprite as child
+          const sprite = new SpriteText(node.name);
+          // sprite.color = "#"+getColor(node.order,0, maxOrder,colormap);
+          sprite.color = color1;
+          // sprite.color = "#"+getColor(node.order,0, maxOrder,colormap);
+          // console.log(getColor(node.order,0, maxOrder,colormap))
+          sprite.textHeight = 24 / (node.level + 1);
+
+          if (node.level == 0) {
+            sprite.textHeight = 20;
+          } else if (node.level == 1) {
+            sprite.textHeight = 20;
+          } else if (node.level == 2) {
+            sprite.textHeight = 20;
+          } else if (node.level == 3) {
+            sprite.textHeight = 12;
+          }
+          sprite.fontFace = "Times";
+          if (use) {
+            obj.add(sprite);
+          } else {
+            // obj.material.opacity=1;
+            // obj.material.depthWrite=true;
+            obj.material = new THREE.MeshLambertMaterial({
+              color: getColor(node.order, maxOrder, 0, colormap),
+            });
+          }
+          return obj;
+        })
+        .nodeRelSize(NODE_REL_SIZE)
+        .nodeId("path")
+        .nodeVal("size")
+        .nodeLabel("name")
+        .nodeAutoColorBy("module")
+        .nodeOpacity(0.9)
+        .linkDirectionalParticles(2)
+        .linkDirectionalParticleWidth(0.8)
+        .linkDirectionalParticleSpeed(0.006)
+        .d3Force(
+          "collision",
+          d3.forceCollide((node) => Math.cbrt(node.size) * NODE_REL_SIZE)
+        )
+        .d3VelocityDecay(0.3)
+        .linkWidth(2.0)
+        .linkOpacity(0.5)
+        // .height(window.innerHeight);
+        // .height(2*window.innerHeight/3);
+        .width((1 * window.innerWidth) / 2);
+      //
+
+      // Decrease repel intensity
+      graph.d3Force("charge").strength(-10);
+
+      scale = 1 / 0.1875;
+
+      $.getJSON(fileName, function(json) {
+          console.log(json);
+
+          //todo move this to other document
+          scale=1/0.1875;
+
+          buildList=createBuildList(json, setup, scale);
+          var nodes=setup.nodes;
+          var links=setup.edges;
+
+          graph(document.getElementById('graph'))
+                  .graphData({ nodes, links });
+
+      });
+    }
+
+    const graph = document.getElementById("graph1");
+
+    console.log("foo", graph.renderer());
+  </script>
+</body>

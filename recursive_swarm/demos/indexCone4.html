@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+    <!-- // Amira Abdel-Rahman -->
+    <!-- // (c) Massachusetts Institute of Technology 2020 -->
+    
+<head>
+	<title>Cone 4 - Recursive Swarms</title>
+	
+</head>
+<body>
+	<!-- <a download="info.txt" id="downloadlink" style="display: none">Download</a> -->
+
+    <div id="webgl"></div>
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+
+	<script src="../lib/three.min.js"></script>
+	<script src="../lib/OrbitControls.js"></script>
+	<script src="../lib/OBJLoader.js"></script>
+	<script src="../lib/dat.gui.min.js"></script>
+	<script src="../lib/TransformControls.js"></script>
+	<script src="../lib/GPUComputationRenderer.js"></script>
+
+	<script src="../js/voxel.js"></script>
+    
+    
+    <script src="../js/swarm.js"></script>
+	<script src="../js/swarm_geometry.js"></script>
+	<script src="../js/swarm_gui.js"></script>
+	<script src="../js/swarm_IK.js"></script>
+	<script src="../js/swarm_move.js"></script>
+	<script src="../js/swarm_path.js"></script>
+	<script src="../js/swarm_step.js"></script>
+	<script src="../js/swarm_three.js"></script>
+    <script src="../js/swarm_voxel.js"></script>
+
+    <script src="../js/swarm_build.js"></script>
+    
+	<script>
+
+		var voxelSpacing=3.0;
+		var three='webgl';
+		var speed=1000;
+        var offset2=12;
+        var offset=offset2+8;
+		var buildSize=32;
+		var gridSize=buildSize+2*(offset);
+
+		var robotLocations=[
+
+            [new THREE.Vector3(offset+0           ,offset+1          ,0)      ,new THREE.Vector3(offset+0           ,offset+0           ,0),  1 ],
+            [new THREE.Vector3(offset+0           ,gridSize-offset-1 ,0)      ,new THREE.Vector3(offset+0           ,gridSize-offset-4  ,0),  1 ],
+            [new THREE.Vector3((gridSize-offset-4),offset+1          ,0)      ,new THREE.Vector3((gridSize-offset-4),offset+0           ,0),  1 ],
+            [new THREE.Vector3((gridSize-offset-4),gridSize-offset-1 ,0)      ,new THREE.Vector3((gridSize-offset-4),(gridSize-offset-4),0),  1 ],
+
+            [new THREE.Vector3(offset+0           ,gridSize/2.0-1 ,0)      ,new THREE.Vector3(offset+0           ,gridSize/2.0-2  ,0),  1 ],
+            [new THREE.Vector3((gridSize/2.0-2),offset+1          ,0)      ,new THREE.Vector3((gridSize/2.0-2),offset+0           ,0),  1 ],
+            [new THREE.Vector3((gridSize/2.0-2),gridSize-offset-1 ,0)      ,new THREE.Vector3((gridSize/2.0-2),(gridSize-offset-2),0),  1 ],
+            [new THREE.Vector3((gridSize-offset-2),gridSize/2.0-1 ,0)      ,new THREE.Vector3((gridSize-offset-2),(gridSize/2.0-2),0),  1 ],
+
+            [new THREE.Vector3(4+offset2          ,gridSize/2.0          ,0)   ,new THREE.Vector3(6+offset2            ,gridSize/2.0            ,0) ,2 ],
+            [new THREE.Vector3(gridSize-4-offset2            ,gridSize/2.0          ,0)   ,new THREE.Vector3(gridSize-2-offset2            ,gridSize/2.0            ,0) ,2 ],
+            [new THREE.Vector3(gridSize/2.0          ,2+offset2          ,0)   ,new THREE.Vector3(gridSize/2.0          ,4+offset2             ,0) ,2 ],
+            [new THREE.Vector3(gridSize/2.0            ,gridSize-2-offset2          ,0)   ,new THREE.Vector3(gridSize/2.0            ,gridSize-4-offset2           ,0) ,2 ],
+
+            [new THREE.Vector3(gridSize-offset-4             ,4          ,0)   ,new THREE.Vector3(gridSize-offset-4             ,8           ,0) ,4 ],
+
+
+		];
+
+		var depositLocations=[
+
+            [new THREE.Vector3(offset+0            ,offset+0           ,0)     ,new THREE.Vector3(-2,-2,0)],
+            [new THREE.Vector3(offset+0            ,(gridSize-offset-4),  0)   ,new THREE.Vector3(-2,2,0) ],
+			[new THREE.Vector3(gridSize-offset-4     ,offset+0           ,0)   ,new THREE.Vector3(2,-2,0) ],
+            [new THREE.Vector3(gridSize-offset-4     ,(gridSize-offset-4),  0) ,new THREE.Vector3(2,2,0)  ],
+
+            [new THREE.Vector3(offset+0            ,(gridSize/2.0-2),  0)   ,new THREE.Vector3(-2,0,0) ],
+            [new THREE.Vector3(gridSize/2.0-2     ,offset+0           ,0)   ,new THREE.Vector3(0,-2,0) ],
+            [new THREE.Vector3(gridSize/2.0-2     ,(gridSize-offset-2),  0) ,new THREE.Vector3(0,2,0)  ],
+            [new THREE.Vector3(gridSize-offset-2     ,(gridSize/2.0-2),  0) ,new THREE.Vector3(2,0,0)  ],
+
+
+            [new THREE.Vector3(4 +offset2           ,gridSize/2.0           ,0),new THREE.Vector3(-6,0,0)],
+            [new THREE.Vector3(gridSize-4-offset2            ,gridSize/2.0           ,0),new THREE.Vector3(6,0,0)],
+            [new THREE.Vector3(gridSize/2.0          ,4+offset2           ,0),new THREE.Vector3(0,-6,0)],
+            [new THREE.Vector3(gridSize/2.0            ,gridSize-4-offset2           ,0),new THREE.Vector3(0,6,0)],
+
+            [new THREE.Vector3(gridSize-offset-4             ,4           ,0),new THREE.Vector3(0,0,0)],
+
+        ];
+        
+		var hierarchical=true;
+
+        var buildType=["frepCube","frep","directions","list","sdfList","sdfList"];
+
+        var buildList,recursiveSwarms;
+
+        $.getJSON("../asdf/json/cubeCone4.json", function(json) {
+            console.log(json);
+            //todo move this to other document
+            var scale=1/0.1875;
+            var shift=gridSize/2.0;
+
+            buildList=createBuildList (json,scale,shift);
+
+            var setup={
+                three:'webgl',
+                voxelSpacing:3.0,
+                viz:{
+                    speed:1000,
+                    showGUI:false,
+                    saveAngleData:false,
+                },
+                robotGeometry:{
+                    leg1:5,
+                    leg2:5,
+                    offset:2
+                },
+                path:{
+                    showPath:false,
+                    number:10, //number of divisions/points 
+                    cHeight:1.5 //parabola height (will be multiplied later by voxelSpacing)
+
+                },
+                robotLocations:robotLocations,
+                depositLocations:depositLocations,
+                hierarchical:true,
+                buildType:"sdfList",
+                buildList:buildList ,
+                gridSize:gridSize,
+                
+
+            };
+
+            
+            var t=new THREE.Vector3(0,0,0);
+
+            recursiveSwarms=new Swarm(setup);
+
+            recursiveSwarms.camera.position.set(200*recursiveSwarms.gridSize/40, 200*recursiveSwarms.gridSize/40, 100*recursiveSwarms.gridSize/40);//general
+            recursiveSwarms.cameraControls.target.set( 0, 0, -40*recursiveSwarms.gridSize/30 );//general
+
+
+
+        });
+
+		
+
+
+	</script>
+
+	
+
+
+</body>
+</html>

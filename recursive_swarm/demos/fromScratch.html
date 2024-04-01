@@ -1,0 +1,50 @@
+<head>
+  <style>
+    body {
+      margin: 0;
+    }
+  </style>
+
+  <script src="//unpkg.com/3d-force-graph"></script>
+  <!--<script src="../../dist/3d-force-graph.js"></script>-->
+</head>
+
+<body>
+  <div id="3d-graph"></div>
+
+  <script>
+    const setup = {};
+    setup.nodes = [];
+
+    // Random tree
+    const N = 300;
+    const gData = {
+      nodes: setup.nodes.map((node) => ({
+        id: node.id,
+        px: node.position.x * scale,
+        py: node.position.y * scale,
+        pz: node.position.z * scale,
+        dx: node.displacement.x * scale,
+        dy: node.displacement.y * scale,
+        dz: node.displacement.z * scale,
+        nomSize: node.nomSize,
+        viz: node.viz,
+        order: node.order,
+      })),
+    };
+
+    //   const gData = {
+    //     nodes: [...Array(N).keys()].map(i => ({ id: i })),
+    //     links: [...Array(N).keys()]
+    //       .filter(id => id)
+    //       .map(id => ({
+    //         source: id,
+    //         target: Math.round(Math.random() * (id-1))
+    //       }))
+    //   };
+
+    const Graph = ForceGraph3D()(document.getElementById("3d-graph")).graphData(
+      gData
+    );
+  </script>
+</body>
